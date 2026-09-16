@@ -30,13 +30,31 @@ public final class Database: Sendable {
         Table(pool: pool)
     }
 
+    /// One atomic, non-suspending transaction. Do not retain its scoped tables outside the closure.
+    public func transaction<Value: Sendable>(
+        _ updates: @escaping @Sendable (Transaction) throws -> Value
+    ) async throws -> Value {
+        try await pool.write { try updates(Transaction(database: $0)) }
+    }
+
+    /// Multiple typed reads from one consistent snapshot, on the reader pool.
+    public func snapshot<Value: Sendable>(_ fetch: @escaping @Sendable (Transaction) throws -> Value)
+        async throws -> Value
+    {
+        try await pool.read { try fetch(Transaction(database: $0)) }
+    }
+
     /// Executes custom SQL or multiple operations in one transaction.
-    public func write<Value: Sendable>(_ updates: @escaping @Sendable (GRDB.Database) throws -> Value) async throws -> Value {
+    public func write<Value: Sendable>(_ updates: @escaping @Sendable (GRDB.Database) throws -> Value)
+        async throws -> Value
+    {
         try await pool.write(updates)
     }
 
     /// Executes a custom read using the same pool as table queries.
-    public func read<Value: Sendable>(_ fetch: @escaping @Sendable (GRDB.Database) throws -> Value) async throws -> Value {
+    public func read<Value: Sendable>(_ fetch: @escaping @Sendable (GRDB.Database) throws -> Value)
+        async throws -> Value
+    {
         try await pool.read(fetch)
     }
 }

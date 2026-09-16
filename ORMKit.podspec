@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'ORMKit'
-  s.version = '0.0.1'
+  s.version = '0.0.2'
   s.summary = 'A typed, macro-powered SQLite ORM for Swift 6.'
   s.description = 'UI-independent SQLite persistence with typed queries, async CRUD, observation, and explicit migrations.'
   s.homepage = 'https://github.com/FeliksLv01/ORMKit'

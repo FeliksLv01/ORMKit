@@ -25,34 +25,51 @@ public struct TablePredicate: Sendable {
 }
 
 public struct TableOrder: Sendable {
-    let ordering: SQLOrdering
+    let orderings: [SQLOrdering]
 
     init(_ ordering: SQLOrdering) {
-        self.ordering = ordering
+        self.orderings = [ordering]
     }
+
+    private init(_ orderings: [SQLOrdering]) { self.orderings = orderings }
+
+    /// Composes stable ordering, e.g. `updatedAt.desc.then(sequence.desc)`.
+    public func then(_ other: TableOrder) -> TableOrder { TableOrder(orderings + other.orderings) }
 }
 
-public func == <Value: DatabaseValueConvertible & Sendable>(lhs: TableColumn<Value>, rhs: Value) -> TablePredicate {
+public func == <Value: DatabaseValueConvertible & Sendable>(lhs: TableColumn<Value>, rhs: Value)
+    -> TablePredicate
+{
     TablePredicate(expression: GRDB.Column(lhs.name) == rhs)
 }
 
-public func != <Value: DatabaseValueConvertible & Sendable>(lhs: TableColumn<Value>, rhs: Value) -> TablePredicate {
+public func != <Value: DatabaseValueConvertible & Sendable>(lhs: TableColumn<Value>, rhs: Value)
+    -> TablePredicate
+{
     TablePredicate(expression: GRDB.Column(lhs.name) != rhs)
 }
 
-public func < <Value: DatabaseValueConvertible & Comparable & Sendable>(lhs: TableColumn<Value>, rhs: Value) -> TablePredicate {
+public func < <Value: DatabaseValueConvertible & Comparable & Sendable>(
+    lhs: TableColumn<Value>, rhs: Value
+) -> TablePredicate {
     TablePredicate(expression: GRDB.Column(lhs.name) < rhs)
 }
 
-public func > <Value: DatabaseValueConvertible & Comparable & Sendable>(lhs: TableColumn<Value>, rhs: Value) -> TablePredicate {
+public func > <Value: DatabaseValueConvertible & Comparable & Sendable>(
+    lhs: TableColumn<Value>, rhs: Value
+) -> TablePredicate {
     TablePredicate(expression: GRDB.Column(lhs.name) > rhs)
 }
 
-public func == <Value: DatabaseValueConvertible & Sendable>(lhs: TableColumn<Value?>, rhs: Value?) -> TablePredicate {
+public func == <Value: DatabaseValueConvertible & Sendable>(lhs: TableColumn<Value?>, rhs: Value?)
+    -> TablePredicate
+{
     TablePredicate(expression: GRDB.Column(lhs.name) == rhs)
 }
 
-public func != <Value: DatabaseValueConvertible & Sendable>(lhs: TableColumn<Value?>, rhs: Value?) -> TablePredicate {
+public func != <Value: DatabaseValueConvertible & Sendable>(lhs: TableColumn<Value?>, rhs: Value?)
+    -> TablePredicate
+{
     TablePredicate(expression: GRDB.Column(lhs.name) != rhs)
 }
 
@@ -62,7 +79,10 @@ public struct TableQuery<Record: TableModel>: Sendable {
     let ordering: TableOrder?
     let limitCount: Int?
 
-    init(pool: DatabasePool, predicate: TablePredicate? = nil, ordering: TableOrder? = nil, limitCount: Int? = nil) {
+    init(
+        pool: DatabasePool, predicate: TablePredicate? = nil, ordering: TableOrder? = nil,
+        limitCount: Int? = nil
+    ) {
         self.pool = pool
         self.predicate = predicate
         self.ordering = ordering
@@ -76,7 +96,8 @@ public struct TableQuery<Record: TableModel>: Sendable {
     }
 
     public func order(_ makeOrder: (Record.Columns) -> TableOrder) -> Self {
-        Self(pool: pool, predicate: predicate, ordering: makeOrder(Record.columns), limitCount: limitCount)
+        Self(
+            pool: pool, predicate: predicate, ordering: makeOrder(Record.columns), limitCount: limitCount)
     }
 
     public func limit(_ count: Int) -> Self {
@@ -88,7 +109,8 @@ public struct TableQuery<Record: TableModel>: Sendable {
         let ordering = self.ordering
         let limitCount = self.limitCount
         return try await pool.read { db in
-            try Self.request(predicate: predicate, ordering: ordering, limitCount: limitCount).fetchAll(db)
+            try Self.request(predicate: predicate, ordering: ordering, limitCount: limitCount).fetchAll(
+                db)
         }
     }
 
@@ -96,7 +118,9 @@ public struct TableQuery<Record: TableModel>: Sendable {
         let predicate = self.predicate
         let ordering = self.ordering
         return try await pool.read { db in
-            try Self.request(predicate: predicate, ordering: ordering, limitCount: 1).fetchOne(db)
+            try Self.request(
+                predicate: predicate, ordering: ordering, limitCount: self.limitCount == 0 ? 0 : 1
+            ).fetchOne(db)
         }
     }
 
@@ -105,17 +129,18 @@ public struct TableQuery<Record: TableModel>: Sendable {
         let ordering = self.ordering
         let limitCount = self.limitCount
         let observation = ValueObservation.tracking { db in
-            try Self.request(predicate: predicate, ordering: ordering, limitCount: limitCount).fetchAll(db)
+            try Self.request(predicate: predicate, ordering: ordering, limitCount: limitCount).fetchAll(
+                db)
         }
         return TableObservation(observation.values(in: pool, bufferingPolicy: .bufferingNewest(1)))
     }
 
-    private static func request(
+    static func request(
         predicate: TablePredicate?, ordering: TableOrder?, limitCount: Int?
     ) -> QueryInterfaceRequest<Record> {
         var request = Record.all()
         if let predicate { request = request.filter(predicate.expression) }
-        if let ordering { request = request.order(ordering.ordering) }
+        if let ordering { request = request.order(ordering.orderings) }
         if let limitCount { request = request.limit(limitCount) }
         return request
     }
