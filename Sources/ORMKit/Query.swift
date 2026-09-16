@@ -35,6 +35,8 @@ public struct TableOrder: Sendable {
 
     /// Composes stable ordering, e.g. `updatedAt.desc.then(sequence.desc)`.
     public func then(_ other: TableOrder) -> TableOrder { TableOrder(orderings + other.orderings) }
+
+    static func combined(_ orders: [TableOrder]) -> TableOrder { TableOrder(orders.flatMap(\.orderings)) }
 }
 
 public func == <Value: DatabaseValueConvertible & Sendable>(lhs: TableColumn<Value>, rhs: Value)
@@ -78,6 +80,42 @@ public struct TableQuery<Record: TableModel>: Sendable {
     let predicate: TablePredicate?
     let ordering: TableOrder?
     let limitCount: Int?
+
+    public func filter(_ predicate: (Record.Columns) -> TablePredicate) -> Self { self.where(predicate) }
+
+    public func orderBy(_ orders: (Record.Columns) -> [TableOrder]) -> Self {
+        order { TableOrder.combined(orders($0)) }
+    }
+
+    public func fetch() async throws -> [Record] { try await fetchAll() }
+    public func first() async throws -> Record? { try await fetchOne() }
+
+    public func count() async throws -> Int {
+        try await pool.read { db in
+            try Self.request(predicate: predicate, ordering: ordering, limitCount: limitCount).fetchCount(db)
+        }
+    }
+
+    public func exists() async throws -> Bool {
+        guard limitCount != 0 else { return false }
+        return try await limit(1).count() > 0
+    }
+
+    @discardableResult public func update(_ changes: (inout TableChanges<Record>) -> Void) async throws -> Int {
+        var patch = TableChanges<Record>()
+        changes(&patch)
+        let assignments = patch.assignments
+        return try await pool.write { db in
+            try TransactionTable<Record>(database: db, predicate: predicate, ordering: ordering, limitCount: limitCount)
+                .update { _ in assignments }
+        }
+    }
+
+    @discardableResult public func delete() async throws -> Int {
+        try await pool.write { db in
+            try TransactionTable<Record>(database: db, predicate: predicate, ordering: ordering, limitCount: limitCount).delete()
+        }
+    }
 
     init(
         pool: DatabasePool, predicate: TablePredicate? = nil, ordering: TableOrder? = nil,

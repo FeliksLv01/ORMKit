@@ -52,6 +52,23 @@ public struct TransactionTable<Record: TableModel> {
     var ordering: TableOrder?
     var limitCount: Int?
 
+    public func filter(_ predicate: (Record.Columns) -> TablePredicate) -> Self { self.where(predicate) }
+    public func orderBy(_ orders: (Record.Columns) -> [TableOrder]) -> Self { order { TableOrder.combined(orders($0)) } }
+    public func fetch() throws -> [Record] { try fetchAll() }
+    public func first() throws -> Record? { try fetchOne() }
+
+    public func insert(_ fields: (inout TableChanges<Record>) -> Void) throws {
+        var patch = TableChanges<Record>()
+        fields(&patch)
+        try insert { _ in patch.assignments }
+    }
+
+    @discardableResult public func update(_ changes: (inout TableChanges<Record>) -> Void) throws -> Int {
+        var patch = TableChanges<Record>()
+        changes(&patch)
+        return try update { _ in patch.assignments }
+    }
+
     public func `where`(_ makePredicate: (Record.Columns) -> TablePredicate) -> Self {
         var result = self
         let next = makePredicate(Record.columns)

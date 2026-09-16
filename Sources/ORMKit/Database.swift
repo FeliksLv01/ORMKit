@@ -62,6 +62,27 @@ public final class Database: Sendable {
 public struct Table<Record: TableModel>: Sendable {
     let pool: DatabasePool
 
+    public func filter(_ predicate: (Record.Columns) -> TablePredicate) -> TableQuery<Record> { all().filter(predicate) }
+    public func orderBy(_ orders: (Record.Columns) -> [TableOrder]) -> TableQuery<Record> { all().orderBy(orders) }
+    public func limit(_ count: Int) -> TableQuery<Record> { all().limit(count) }
+    public func fetch() async throws -> [Record] { try await all().fetch() }
+    public func first() async throws -> Record? { try await all().first() }
+    public func count() async throws -> Int { try await all().count() }
+    public func exists() async throws -> Bool { try await all().exists() }
+
+    public func insert(_ fields: (inout TableChanges<Record>) -> Void) async throws {
+        var patch = TableChanges<Record>()
+        fields(&patch)
+        let assignments = patch.assignments
+        try await pool.write { db in try TransactionTable<Record>(database: db).insert { _ in assignments } }
+    }
+
+    @discardableResult public func update(_ changes: (inout TableChanges<Record>) -> Void) async throws -> Int {
+        try await all().update(changes)
+    }
+
+    @discardableResult public func delete() async throws -> Int { try await all().delete() }
+
     public func all() -> TableQuery<Record> {
         TableQuery(pool: pool)
     }

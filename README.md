@@ -24,9 +24,9 @@ let database = try ORMKit.Database(at: databaseURL, migrations: [
 
 let messages = database.table(Message.self)
 try await messages.insert(Message(id: "1", chatID: "general", text: "Hello"))
-let rows = try await messages.where { $0.chatID == "general" }.order { $0.id.desc }.fetchAll()
+let rows = try await messages.filter { $0.chatID == "general" }.orderBy { [$0.id.desc] }.limit(50).fetch()
 
-for try await snapshot in messages.where({ $0.chatID == "general" }).observe() {
+for try await snapshot in messages.filter({ $0.chatID == "general" }).observe() {
     // Update UIKit, SwiftUI, or any other consumer on its chosen executor.
 }
 ```
@@ -48,7 +48,7 @@ GRDB 7 is not currently available in the CocoaPods public specs index, so declar
 ```ruby
 target 'YourApp' do
   pod 'GRDB.swift', :git => 'https://github.com/groue/GRDB.swift.git', :tag => 'v7.11.1'
-  pod 'ORMKit', :git => 'https://github.com/FeliksLv01/ORMKit.git', :tag => '0.0.2'
+  pod 'ORMKit', :git => 'https://github.com/FeliksLv01/ORMKit.git', :tag => '0.0.1'
 end
 ```
 
@@ -56,7 +56,38 @@ The [local CocoaPods example](Examples/CocoaPods/Podfile) uses `:path => '../..'
 
 ## Design notes
 
-### Bounded queries and atomic changes (0.0.2)
+### Simplified API (unreleased)
+
+This section describes the main branch, not a tagged release. The `0.0.2` tag was withdrawn.
+
+```swift
+let messages = database.table(Message.self)
+let rows = try await messages
+    .filter { $0.chatID == "general" }
+    .orderBy { [$0.id.desc] }
+    .limit(50)
+    .fetch()
+
+try await messages.filter { $0.id == "3" }.update {
+    $0.text = "Ready"
+}
+```
+
+The recommended query vocabulary is `filter`, `orderBy`, `limit`, `fetch`, `first`, `count`, and
+`exists`. Existing `where`/`order`/`fetchAll`/`fetchOne` methods remain compatibility entry points.
+`orderBy` replaces the order with the supplied array; repeated `filter` calls combine with AND.
+
+Update closures receive a write-only typed patch, **not a fetched record**:
+
+- Unassigned fields are not written; `$0.optionalField = nil` explicitly writes SQL NULL.
+- Repeated assignment to a field uses its last value.
+- Reading patch fields (including `+=`) is a compile-time error. Read the record inside a transaction
+  when an update depends on the existing value.
+- Empty patches are rejected. Mutations on a limited query are rejected rather than silently
+  dropping the limit.
+- Partial insert uses the same assignment syntax, preserving defaults for omitted fields.
+- Patch fields must conform to `DatabaseValueConvertible`; raw-value enums can adopt that protocol.
+- Updates return the number of affected rows. An unmatched filter returns zero, not an error.
 
 `limit(50)` emits SQL `LIMIT 50`: it never fetches the entire table and filters in memory.
 For pagination, request 51 rows, display 50, and use the last displayed row as the next cursor.
@@ -64,15 +95,15 @@ Order by a unique tie-breaker as well as the activity timestamp:
 
 ```swift
 let page = try await database.table(Conversation.self)
-    .where { before($0.updatedAt, $0.sequence, cursor.updatedAt, cursor.sequence) }
-    .order { $0.updatedAt.desc.then($0.sequence.desc) }
+    .filter { before($0.updatedAt, $0.sequence, cursor.updatedAt, cursor.sequence) }
+    .orderBy { [$0.updatedAt.desc, $0.sequence.desc] }
     .limit(51)
-    .fetchAll()
+    .fetch()
 ```
 
 Create an index matching the filter prefix and sort columns in an explicit migration.
 Cursor comparison above is a SQL row-value comparison, allowing SQLite to seek into a composite index.
-Zero/negative limits return no rows, including with `fetchOne()`.
+Zero/negative limits return no rows, including with `first()`.
 
 Use `transaction` for atomic typed operations and `snapshot` for consistent reads. The closure is
 non-suspending. Scoped tables must not escape it; they are intentionally not `Sendable`.
@@ -80,9 +111,13 @@ non-suspending. Scoped tables must not escape it; they are intentionally not `Se
 ```swift
 try await database.transaction { tx in
     let messages = tx.table(Message.self)
-    try messages.insert { [$0.id.set(to: "3"), $0.chatID.set(to: "general"), $0.text.set(to: "Draft")] }
-    try messages.where { $0.id == "3" }.update { [$0.text.set(to: "Ready")] }
-    let exists = try messages.where { $0.id == "3" }.exists()
+    try messages.insert {
+        $0.id = "3"
+        $0.chatID = "general"
+        $0.text = "Draft"
+    }
+    try messages.filter { $0.id == "3" }.update { $0.text = "Ready" }
+    let exists = try messages.filter { $0.id == "3" }.exists()
 }
 ```
 
