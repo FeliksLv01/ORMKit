@@ -1,0 +1,30 @@
+PODS:
+  - GRDB.swift (7.11.1):
+    - GRDB.swift/standard (= 7.11.1)
+  - GRDB.swift/standard (7.11.1)
+  - ORMKit (0.0.1):
+    - GRDB.swift (~> 7.11)
+
+DEPENDENCIES:
+  - GRDB.swift (from `https://github.com/groue/GRDB.swift.git`, tag `v7.11.1`)
+  - ORMKit (from `../..`)
+
+EXTERNAL SOURCES:
+  GRDB.swift:
+    :git: https://github.com/groue/GRDB.swift.git
+    :tag: v7.11.1
+  ORMKit:
+    :path: "../.."
+
+CHECKOUT OPTIONS:
+  GRDB.swift:
+    :git: https://github.com/groue/GRDB.swift.git
+    :tag: v7.11.1
+
+SPEC CHECKSUMS:
+  GRDB.swift: 182a9022de5d725adfa2a46ad4d7cde0efa25ca3
+  ORMKit: 49863a5986336972c6df9bdeab5266e64ca4766b
+
+PODFILE CHECKSUM: fc3b66da3186cfb5ddb05c645e89a710f29952a7
+
+COCOAPODS: 1.17.0
