@@ -1,16 +1,21 @@
+import Foundation
 import ORMKit
 
 @Table("messages")
 public struct Message: Sendable {
     @PrimaryKey public var id: String
     @Column("chat_id") public var chatID: String
-    public var text: String
+    @Column(defaultValue: .text("")) public var text: String
 
     public init(id: String, chatID: String, text: String) {
         self.id = id
         self.chatID = chatID
         self.text = text
     }
+}
+
+public func exampleDatabase(at url: URL) throws -> ORMKit.Database {
+    try ORMKit.Database(at: url, migrations: [Migration("v1", tables: [Message.self])])
 }
 
 public func exampleQuery(_ database: ORMKit.Database) async throws -> [Message] {

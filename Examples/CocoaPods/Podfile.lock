@@ -2,7 +2,7 @@ PODS:
   - GRDB.swift (7.11.1):
     - GRDB.swift/standard (= 7.11.1)
   - GRDB.swift/standard (7.11.1)
-  - ORMKit (0.0.1):
+  - ORMKit (0.0.3):
     - GRDB.swift (~> 7.11)
 
 DEPENDENCIES:
@@ -23,7 +23,7 @@ CHECKOUT OPTIONS:
 
 SPEC CHECKSUMS:
   GRDB.swift: 182a9022de5d725adfa2a46ad4d7cde0efa25ca3
-  ORMKit: 49863a5986336972c6df9bdeab5266e64ca4766b
+  ORMKit: 6e7c04393a02e28eda0af9dee521b1542327eb51
 
 PODFILE CHECKSUM: fc3b66da3186cfb5ddb05c645e89a710f29952a7
 

@@ -13,13 +13,7 @@ struct Message: Sendable {
 }
 
 let database = try ORMKit.Database(at: databaseURL, migrations: [
-    Migration("create_messages") { db in
-        try db.create(table: "messages") { table in
-            table.column("id", .text).primaryKey()
-            table.column("chat_id", .text).notNull()
-            table.column("text", .text).notNull()
-        }
-    }
+    Migration("create_messages", tables: [Message.self])
 ])
 
 let messages = database.table(Message.self)
@@ -31,7 +25,35 @@ for try await snapshot in messages.filter({ $0.chatID == "general" }).observe() 
 }
 ```
 
-`@Table` generates a table name, typed columns, coding keys, and `TableModel` conformance. Every model needs exactly one `@PrimaryKey`. Only stored properties with explicit types are supported in this first version. Custom column names use `@Column("sqlite_name")`.
+`@Table` generates a table name, typed columns, coding keys, a table schema, and `TableModel` conformance. Every model needs exactly one `@PrimaryKey`. Stored properties need explicit types. Custom column names use `@Column("sqlite_name")`.
+
+## Creating tables
+
+`Migration("v1", tables: [Message.self])` creates model tables and indexes once, inside a transaction. In a migration with other operations, use `try db.createTable(Message.self)`. Merely calling `database.table(Message.self)` does not change the schema.
+
+```swift
+@Table("notes")
+struct Note: Sendable {
+    @PrimaryKey(autoIncrement: true) var id: Int64
+    @Column(unique: true) var externalID: String
+    @Column(defaultValue: .text("")) var text: String
+    @Column(defaultValue: .integer(0), check: "revision >= 0") var revision: Int
+    @Column(references: .init("folders", column: "id", onDelete: .cascade)) var folderID: String
+    var archivedAt: Double?
+
+    static var schemaIndexes: [TableIndex] {
+        [TableIndex("notes_folder", columns: [columns.folderID.name], conditionSQL: "archivedAt IS NULL")]
+    }
+}
+```
+
+Non-optional fields generate `NOT NULL`; optional fields allow `NULL`. Integer types and `Bool` map to INTEGER, `Float`/`Double` to REAL, `String`/`Date` to TEXT, and `Data`/`UUID` to BLOB. Raw-representable enums use their raw value's storage. These defaults match GRDB's default record encoding. Set `@Column(storage: .text)` (or another storage type) for custom codecs or overridden encoding strategies. Unsupported types fail with `SchemaError` rather than guessing. Swift property initializers are not SQLite defaults: declare database defaults with `@Column(defaultValue:)`.
+
+`schemaChecks: [String]` adds cross-column checks. Checks, partial-index conditions, and `.sql` defaults are trusted SQL authored by the developer, never user input. Register referenced tables before their dependents. Only one non-optional primary key is supported; AUTOINCREMENT requires `Int` or `Int64`. Table, column, and index names must be nonempty and contain no double quote or NUL.
+
+Use `@Table("notes", schema: false)` for partial-row projections that share a table with a full model. Creating a table from such a projection throws.
+
+Existing databases still need explicit versioned migrations. Do not change the model used by a historical creation migration and then replay old ALTER statements against that new model: keep frozen per-version schema models, or create the latest model schema only for fresh databases and run the historical upgrade path only for existing databases (as in Nook's ChatSchema). Changing a Swift model alone never alters an existing table.
 
 ## Swift Package Manager
 
@@ -48,7 +70,7 @@ GRDB 7 is not currently available in the CocoaPods public specs index, so declar
 ```ruby
 target 'YourApp' do
   pod 'GRDB.swift', :git => 'https://github.com/groue/GRDB.swift.git', :tag => 'v7.11.1'
-  pod 'ORMKit', :git => 'https://github.com/FeliksLv01/ORMKit.git', :tag => '0.0.1'
+  pod 'ORMKit', :git => 'https://github.com/FeliksLv01/ORMKit.git', :tag => '0.0.3'
 end
 ```
 
@@ -58,7 +80,7 @@ The [local CocoaPods example](Examples/CocoaPods/Podfile) uses `:path => '../..'
 
 ### Simplified API (unreleased)
 
-This section describes the main branch, not a tagged release. The `0.0.2` tag was withdrawn.
+The APIs below are included in `0.0.3`. The earlier `0.0.2` tag was withdrawn.
 
 ```swift
 let messages = database.table(Message.self)
@@ -131,6 +153,6 @@ try await database.transaction { tx in
 - `read`/`write` remain escape hatches for explicit schema migrations and specialized SQL.
 
 - SQLite access and observations are asynchronous. The library has no UIKit, SwiftUI, or `@MainActor` dependency.
-- Query columns are compile-time typed; migrations deliberately remain explicit SQL/GRDB schema operations.
+- Query columns are compile-time typed; table creation uses generated schema metadata, and upgrades remain explicit versioned migrations.
 - `Database.read` and `Database.write` expose GRDB's database handle for complex queries and transactional operations.
 - Existing migration identifiers and contents should stay stable after release.
