@@ -18,7 +18,7 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_27.0.app/Contents/Developer
       - name: Macro tests on host
-        run: bash Scripts/test-macros.sh
+        run: python3 Scripts/test.py macros
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -31,7 +31,7 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_27.0.app/Contents/Developer
       - name: Test SwiftPM package on iOS
-        run: bash Scripts/test-ios.sh
+        run: python3 Scripts/test.py ios
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -49,7 +49,7 @@ jobs:
           set -o pipefail
           mkdir -p .build/ci
           swift test 2>&1 | tee .build/ci/macos-tests.log
-          bash Scripts/check-write-only.sh
+          python3 Scripts/test.py negative
       - uses: actions/upload-artifact@v4
         if: always()
         with:

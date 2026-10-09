@@ -147,16 +147,18 @@ try await database.transaction { tx in
 
 This is a standard SwiftPM package: `Package.swift`, `Sources/` and `Tests/`. SwiftPM is the only supported integration, and macros compile from source. Historical versions remain unchanged.
 
+Automation uses Python 3.11+ standard library, Xcode and xcbeautify; no Ruby or Python packages are required.
+
 ```sh
-bash Scripts/test-macros.sh
-bash Scripts/test-ios.sh
+python3 Scripts/test.py macros
+python3 Scripts/test.py ios
 ```
 
 GitHub Actions runs host macro tests and iOS package tests on pull requests, main updates and version tags. Runtime tests include real macro expansion and automatic registration/database assertions. `xcodebuild` uses pipefail and xcbeautify; logs and xcresults are uploaded even on failure. New numeric version tags create a GitHub Release only after all CI jobs pass. Local release orchestration, CocoaPods and precompiled macro distribution have been removed.
 
 ## GRDB artifact
 
-`ruby Scripts/build_grdb.rb` builds the pinned upstream XCFramework. The manual **Build GRDB artifact** workflow builds and tests it on macOS and iOS before optional publication. Download and commit the generated `GRDBArtifact.lock.json` after publication. Normal CI and ORMKit versions reuse that checksum-pinned asset. Public APIs expose ORMKit's `SQLConnection`, `SQLValue`, `SQLRow` and `SQLValueConvertible`; application code does not depend on GRDB types.
+`python3 Scripts/build_grdb.py` builds the pinned upstream XCFramework. The manual **Build GRDB artifact** workflow builds and tests it on macOS and iOS before optional publication. Download and commit the generated `GRDBArtifact.lock.json` after publication. Normal CI and ORMKit versions reuse that checksum-pinned asset. Public APIs expose ORMKit's `SQLConnection`, `SQLValue`, `SQLRow` and `SQLValueConvertible`; application code does not depend on GRDB types.
 
 ## Migration from 0.0.3
 

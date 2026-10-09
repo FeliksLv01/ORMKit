@@ -8,16 +8,18 @@ Swift 6 SQLite ORM，仅通过 SwiftPM 分发。模型、类型安全查询、�
 
 采用标准 SwiftPM 包结构：`Package.swift`、`Sources/`、`Tests/`。仅支持 SwiftPM，宏从源码编译，历史版本保持不变。
 
+自动化脚本使用 Python 3.11+ 标准库、Xcode 和 xcbeautify，无需安装 Ruby 或 Python 第三方包。
+
 ```sh
-bash Scripts/test-macros.sh
-bash Scripts/test-ios.sh
+python3 Scripts/test.py macros
+python3 Scripts/test.py ios
 ```
 
 GitHub Actions 在 PR、main 更新和版本 tag 时执行宿主宏测试及 iOS 包测试。运行时测试覆盖真实宏展开和自动注册/数据库断言。xcodebuild 使用 pipefail 和 xcbeautify；失败时也上传日志与 xcresults。数字版本 tag 的全部 CI 任务通过后才创建 GitHub Release。移除本地发布编排、CocoaPods 和预编译宏分发。
 
 ## GRDB 产物
 
-`ruby Scripts/build_grdb.rb` 构建固定上游版本的 XCFramework。手动触发 **Build GRDB artifact** workflow 后先在 macOS 和 iOS 验证，再按 publish 选项发布不可变产物；下载并提交生成的 `GRDBArtifact.lock.json`。日常 CI 和 ORMKit 新版本复用校验和锁定的附件。公开接口使用 ORMKit 自己的 `SQLConnection`、`SQLValue`、`SQLRow` 和 `SQLValueConvertible`，应用不依赖 GRDB 类型。
+`python3 Scripts/build_grdb.py` 构建固定上游版本的 XCFramework。手动触发 **Build GRDB artifact** workflow 后先在 macOS 和 iOS 验证，再按 publish 选项发布不可变产物；下载并提交生成的 `GRDBArtifact.lock.json`。日常 CI 和 ORMKit 新版本复用校验和锁定的附件。公开接口使用 ORMKit 自己的 `SQLConnection`、`SQLValue`、`SQLRow` 和 `SQLValueConvertible`，应用不依赖 GRDB 类型。
 
 ## 从 0.0.3 迁移
 

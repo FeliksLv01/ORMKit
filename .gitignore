@@ -8,3 +8,5 @@ Prebuilt/
 .distribution/
 vendor/bundle/
 .swiftpm/
+
+__pycache__/

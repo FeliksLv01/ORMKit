@@ -10,7 +10,7 @@
 ## Tests and CI
 
 - GitHub Actions is the verification and release gate. Preserve macro tests, all runtime tests and actual macro expansion/registration assertions. Host macro tests are separate because iOS cannot execute compiler-plugin host test bundles.
-- bash Scripts/test-macros.sh runs host macro tests; bash Scripts/test-ios.sh runs the standard package runtime tests. No temporary consumer-project generator or local release orchestrator. Ruby is used only by the GRDB artifact builder.
+- python3 Scripts/test.py macros runs host macro tests; python3 Scripts/test.py ios runs the standard package runtime tests. No temporary consumer-project generator or local release orchestrator. All automation uses Python 3.11+ standard library; do not add Ruby or shell wrappers.
 - Every xcodebuild uses pipefail, tee logs and xcbeautify; check Simulator availability. CI uploads logs and xcresults on success or failure. Stale results never validate new sources.
 - Numeric version tags create a library Release only after all CI jobs pass. Never add skip-test options or overwrite existing tags/Releases. Preserve historical versions.
 - Use rtk for shell tools, finish with git diff --check, and keep English/Chinese docs synchronized. Never commit generated projects, caches or build output. Do not patch dependency checkouts/generated fixtures to hide failures.
