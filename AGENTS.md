@@ -17,3 +17,5 @@
 
 - Preserve Tests/CompileFailures/ReadChanges.swift and its expected write-only diagnostic in CI; unrelated compilation failures must not pass the negative test.
 - GRDB workflow builds/tests the local candidate before publication, uploads the lock and ZIP, and only publishes when explicitly dispatched with publish enabled. Commit the resulting lock before releasing an ORMKit version. Reuse its immutable artifact in normal package CI; do not rebuild GRDB for every library commit.
+
+- Package.swift must be self-contained when SwiftPM loads it from Git through a virtual filesystem. Never read adjacent lock/config files in the manifest. Artifact URL/checksum are literals synchronized with the lock by Scripts/sync_grdb_manifest.py. Preserve the empty-cache Git resolution CI gate.

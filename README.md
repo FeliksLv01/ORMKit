@@ -158,7 +158,7 @@ GitHub Actions runs host macro tests and iOS package tests on pull requests, mai
 
 ## GRDB artifact
 
-`python3 Scripts/build_grdb.py` builds the pinned upstream XCFramework. The manual **Build GRDB artifact** workflow builds and tests it on macOS and iOS before optional publication. Download and commit the generated `GRDBArtifact.lock.json` after publication. Normal CI and ORMKit versions reuse that checksum-pinned asset. Public APIs expose ORMKit's `SQLConnection`, `SQLValue`, `SQLRow` and `SQLValueConvertible`; application code does not depend on GRDB types.
+`python3 Scripts/build_grdb.py` builds the pinned upstream XCFramework. Then run `python3 Scripts/sync_grdb_manifest.py` to copy the lock URL/checksum into the self-contained manifest. Commit both `Package.swift` and the lock. `python3 Scripts/test.py resolution` verifies resolution from Git with an empty cache. The manual **Build GRDB artifact** workflow builds and tests it on macOS and iOS before optional publication. Download and commit the generated `GRDBArtifact.lock.json` after publication. Normal CI and ORMKit versions reuse that checksum-pinned asset. Public APIs expose ORMKit's `SQLConnection`, `SQLValue`, `SQLRow` and `SQLValueConvertible`; application code does not depend on GRDB types.
 
 ## Migration from 0.0.3
 

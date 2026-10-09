@@ -17,7 +17,9 @@ jobs:
       - uses: actions/checkout@v5
       - run: sudo xcode-select -s /Applications/Xcode_27.0.app/Contents/Developer
       - name: Build pinned upstream GRDB
-        run: python3 Scripts/build_grdb.py
+        run: |
+          python3 Scripts/build_grdb.py
+          python3 Scripts/sync_grdb_manifest.py
       - name: Verify local XCFramework with ORMKit
         run: python3 Scripts/test.py local-grdb
       - name: Stage artifact and lock
@@ -25,7 +27,7 @@ jobs:
           mkdir -p .build/artifact
           fingerprint=$(python3 -c 'import json; print(json.load(open("GRDBArtifact.lock.json"))["input_fingerprint"])')
           cp ".distribution/grdb/$fingerprint/GRDB.xcframework.zip" .build/artifact/
-          cp GRDBArtifact.lock.json ThirdPartyNotices/GRDB-LICENSE.txt .build/artifact/
+          cp Package.swift GRDBArtifact.lock.json ThirdPartyNotices/GRDB-LICENSE.txt .build/artifact/
       - uses: actions/upload-artifact@v4
         if: always()
         with:

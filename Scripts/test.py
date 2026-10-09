@@ -101,11 +101,27 @@ def local_grdb():
                         shutil.copytree(path, LOGS / path.name)
 
 
+
+def resolution():
+    lock = json.loads((ROOT / "GRDBArtifact.lock.json").read_text())
+    manifest = (ROOT / "Package.swift").read_text()
+    for name, key in [("grdbURL", "url"), ("grdbChecksum", "checksum")]:
+        if "let " + name + " = " + json.dumps(lock[key]) not in manifest:
+            raise RuntimeError("Manifest/lock mismatch; run python3 Scripts/sync_grdb_manifest.py")
+    revision = capture("git", "-C", str(ROOT), "rev-parse", "HEAD")
+    with tempfile.TemporaryDirectory(prefix="ormkit-git-resolution.") as directory:
+        work = Path(directory)
+        (work / "Sources/Consumer").mkdir(parents=True)
+        (work / "Sources/Consumer/Consumer.swift").write_text("import ORMKit\n")
+        (work / "Package.swift").write_text('// swift-tools-version: 6.1\nimport PackageDescription\nlet package = Package(name: "GitConsumer", platforms: [.macOS(.v12)], dependencies: [.package(url: ' + json.dumps(ROOT.as_uri()) + ', revision: ' + json.dumps(revision) + ')], targets: [.target(name: "Consumer", dependencies: [.product(name: "ORMKit", package: ' + json.dumps(ROOT.name.lower()) + ')])])\n')
+        run(["swift", "package", "--package-path", str(work), "--scratch-path", str(work / "build"), "--cache-path", str(work / "cache"), "resolve"], LOGS / "git-resolution.log", ROOT)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run SwiftPM host macro or iOS runtime tests.")
-    parser.add_argument("suite", choices=["macros", "ios", "negative", "local-grdb"])
+    parser.add_argument("suite", choices=["macros", "ios", "negative", "local-grdb", "resolution"])
     args = parser.parse_args()
-    {"macros": macros, "ios": ios, "negative": negative, "local-grdb": local_grdb}[args.suite]()
+    {"macros": macros, "ios": ios, "negative": negative, "local-grdb": local_grdb, "resolution": resolution}[args.suite]()
 
 
 if __name__ == "__main__":

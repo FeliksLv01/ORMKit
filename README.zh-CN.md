@@ -24,3 +24,5 @@ GitHub Actions 在 PR、main 更新和版本 tag 时执行宿主宏测试及 iOS
 ## 从 0.0.3 迁移
 
 只导入和链接 ORMKit。模型不再继承 GRDB 协议；自定义字段值改为遵循 `SQLValueConvertible`，原始值枚举可使用默认转换实现。迁移和原生 SQL 闭包接收 `SQLConnection`，通过 `createTable(Model.self)` 或参数绑定的 `execute(sql:arguments:)` 操作。原生 `Row` 替换成 `SQLRow`。当前构建工具链不再接受 watchOS 8 framework，因此最低 watchOS 版本提升到 9。
+
+打包后运行 `python3 Scripts/sync_grdb_manifest.py`，同步 manifest 中的下载地址和校验值，并将 `Package.swift` 与锁文件一起提交。manifest 不读取邻近文件，保证 Xcode 从 Git 的虚拟文件系统解析时也能工作。`python3 Scripts/test.py resolution` 使用空缓存从 Git 验证依赖解析。

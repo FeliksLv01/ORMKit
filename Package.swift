@@ -2,12 +2,8 @@
 
 import CompilerPluginSupport
 import PackageDescription
-import Foundation
-
-let artifactPath = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("GRDBArtifact.lock.json")
-let artifact = try! JSONSerialization.jsonObject(with: Data(contentsOf: artifactPath)) as! [String: Any]
-let grdbURL = artifact["url"] as! String
-let grdbChecksum = artifact["checksum"] as! String
+let grdbURL = "https://github.com/FeliksLv01/ORMKit/releases/download/grdb-7.11.1-2a580b4daed3e2bf22054aa022168239812ce82ca389b37374823b44e6902a5f/GRDB.xcframework.zip"
+let grdbChecksum = "80fa7241597b5de746ea9a275637824defdb645399c23799db6132c58ccf4921"
 
 let package = Package(
     name: "ORMKit",
