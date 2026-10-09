@@ -1,0 +1,52 @@
+name: Build GRDB artifact
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the verified immutable artifact Release
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: xcode-27
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - run: sudo xcode-select -s /Applications/Xcode_27.0.app/Contents/Developer
+      - name: Build pinned upstream GRDB
+        run: ruby Scripts/build_grdb.rb
+      - name: Verify local XCFramework with ORMKit
+        run: bash Scripts/test-local-grdb.sh
+      - name: Stage artifact and lock
+        run: |
+          mkdir -p .build/artifact
+          fingerprint=$(python3 -c 'import json; print(json.load(open("GRDBArtifact.lock.json"))["input_fingerprint"])')
+          cp ".distribution/grdb/$fingerprint/GRDB.xcframework.zip" .build/artifact/
+          cp GRDBArtifact.lock.json ThirdPartyNotices/GRDB-LICENSE.txt .build/artifact/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: grdb-artifact-and-results
+          path: |
+            .build/artifact/
+            .build/ci/*.log
+            .build/ci/*.xcresult
+            .distribution/grdb/**/*.log
+      - name: Publish verified artifact without overwriting
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(python3 -c 'import json; print(json.load(open("GRDBArtifact.lock.json"))["release_tag"])')
+          checksum=$(python3 -c 'import json; print(json.load(open("GRDBArtifact.lock.json"))["checksum"])')
+          if gh release view "$tag" >/dev/null 2>&1; then
+            mkdir -p .build/existing
+            gh release download "$tag" --pattern GRDB.xcframework.zip --dir .build/existing
+            actual=$(shasum -a 256 .build/existing/GRDB.xcframework.zip | cut -d ' ' -f 1)
+            test "$actual" = "$checksum"
+          else
+            gh release create "$tag" .build/artifact/* --target "$GITHUB_SHA" --title "$tag" --notes "Pinned upstream GRDB, verified with ORMKit on macOS and iOS. SHA256: $checksum" --latest=false
+          fi

@@ -1,7 +1,7 @@
-public import GRDB
-
 /// A value type mapped to one SQLite table by `@Table`.
-public protocol TableModel: Codable, FetchableRecord, PersistableRecord, TableRecord, Sendable where Columns: Sendable {
+public protocol TableModel: Codable, Sendable where Columns: Sendable {
+    associatedtype Columns: Sendable
+    static var databaseTableName: String { get }
     static var columns: Columns { get }
     static var primaryKeyColumn: String { get }
     static func tableSchema() throws -> TableSchema

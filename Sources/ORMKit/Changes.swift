@@ -1,4 +1,4 @@
-import GRDB
+internal import GRDB
 
 /// A write-only, typed field patch. Unassigned fields are omitted; assigning nil writes SQL NULL.
 @dynamicMemberLookup
@@ -7,12 +7,12 @@ public struct TableChanges<Record: TableModel>: Sendable {
 
     init() {}
 
-    public subscript<Value: DatabaseValueConvertible & Sendable>(
+    public subscript<Value: SQLValueConvertible & Sendable>(
         dynamicMember keyPath: KeyPath<Record.Columns, TableColumn<Value>>
     ) -> Value {
         @available(*, unavailable, message: "Changes are write-only. Fetch a record to read existing values.")
         get { fatalError("Changes are write-only") }
-        set { values[Record.columns[keyPath: keyPath].name] = newValue.databaseValue }
+        set { values[Record.columns[keyPath: keyPath].name] = newValue.sqlValue.databaseValue }
     }
 
     var assignments: [TableAssignment] {

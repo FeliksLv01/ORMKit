@@ -1,12 +1,12 @@
 import Foundation
-import GRDB
+internal import GRDB
 
 /// A named migration. Existing migrations must not be edited after release.
 public struct Migration: Sendable {
     public let identifier: String
-    let migrate: @Sendable (GRDB.Database) throws -> Void
+    let migrate: @Sendable (SQLConnection) throws -> Void
 
-    public init(_ identifier: String, migrate: @escaping @Sendable (GRDB.Database) throws -> Void) {
+    public init(_ identifier: String, migrate: @escaping @Sendable (SQLConnection) throws -> Void) {
         self.identifier = identifier
         self.migrate = migrate
     }
@@ -14,17 +14,21 @@ public struct Migration: Sendable {
 
 /// Owns a SQLite connection pool and applies explicit migrations at opening.
 public final class Database: Sendable {
-    let pool: DatabasePool
+    public let path: String
+    let pool: GRDB.DatabasePool
 
     public init(at url: URL, migrations: [Migration] = []) throws {
-        let pool = try DatabasePool(path: url.path)
+        let pool = try GRDB.DatabasePool(path: url.path)
         var migrator = DatabaseMigrator()
         for migration in migrations {
-            migrator.registerMigration(migration.identifier, migrate: migration.migrate)
+            migrator.registerMigration(migration.identifier, migrate: { try migration.migrate(SQLConnection(database: $0)) })
         }
         try migrator.migrate(pool)
         self.pool = pool
+        self.path = url.path
     }
+
+    public func close() throws { try pool.close() }
 
     public func table<Record: TableModel>(_ record: Record.Type) -> Table<Record> {
         Table(pool: pool)
@@ -45,22 +49,22 @@ public final class Database: Sendable {
     }
 
     /// Executes custom SQL or multiple operations in one transaction.
-    public func write<Value: Sendable>(_ updates: @escaping @Sendable (GRDB.Database) throws -> Value)
+    public func write<Value: Sendable>(_ updates: @escaping @Sendable (SQLConnection) throws -> Value)
         async throws -> Value
     {
-        try await pool.write(updates)
+        try await pool.write { try updates(SQLConnection(database: $0)) }
     }
 
     /// Executes a custom read using the same pool as table queries.
-    public func read<Value: Sendable>(_ fetch: @escaping @Sendable (GRDB.Database) throws -> Value)
+    public func read<Value: Sendable>(_ fetch: @escaping @Sendable (SQLConnection) throws -> Value)
         async throws -> Value
     {
-        try await pool.read(fetch)
+        try await pool.read { try fetch(SQLConnection(database: $0)) }
     }
 }
 
 public struct Table<Record: TableModel>: Sendable {
-    let pool: DatabasePool
+    let pool: GRDB.DatabasePool
 
     public func filter(_ predicate: (Record.Columns) -> TablePredicate) -> TableQuery<Record> { all().filter(predicate) }
     public func orderBy(_ orders: (Record.Columns) -> [TableOrder]) -> TableQuery<Record> { all().orderBy(orders) }
@@ -100,15 +104,15 @@ public struct Table<Record: TableModel>: Sendable {
     }
 
     public func insert(_ record: Record) async throws {
-        try await pool.write { db in try record.insert(db) }
+        try await pool.write { db in try RecordAdapter(model: record).insert(db) }
     }
 
     public func update(_ record: Record) async throws {
-        try await pool.write { db in try record.update(db) }
+        try await pool.write { db in try RecordAdapter(model: record).update(db) }
     }
 
     @discardableResult
     public func delete(_ record: Record) async throws -> Bool {
-        try await pool.write { db in try record.delete(db) }
+        try await pool.write { db in try RecordAdapter(model: record).delete(db) }
     }
 }

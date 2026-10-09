@@ -1,0 +1,21 @@
+{
+  "version": "7.11.1",
+  "revision": "b83108d10f42680d78f23fe4d4d80fc88dab3212",
+  "input_fingerprint": "f3589c641bd658b9e465c19476b55caa69b794bb847c484cd621e8adfa9c2d6b",
+  "checksum": "aef59d347c4cce56de68b562bbc68c7b79bb78a4e53e032a6bc8984197c3c956",
+  "release_tag": "grdb-7.11.1-f3589c641bd658b9e465c19476b55caa69b794bb847c484cd621e8adfa9c2d6b",
+  "environment": {
+    "swift": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx26.0",
+    "xcode": "27A266",
+    "sdks": {
+      "iphoneos": "27.0",
+      "iphonesimulator": "27.0",
+      "macosx": "27.0",
+      "appletvos": "27.0",
+      "appletvsimulator": "27.0",
+      "watchos": "27.0",
+      "watchsimulator": "27.0"
+    }
+  },
+  "url": "https://github.com/FeliksLv01/ORMKit/releases/download/grdb-7.11.1-f3589c641bd658b9e465c19476b55caa69b794bb847c484cd621e8adfa9c2d6b/GRDB.xcframework.zip"
+}

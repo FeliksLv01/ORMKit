@@ -1,5 +1,5 @@
 import Foundation
-import GRDB
+internal import GRDB
 
 public enum ColumnStorage: Sendable {
     case integer, real, text, blob
@@ -34,11 +34,11 @@ public enum ColumnDefault: Sendable {
 public struct ColumnReference: Sendable {
     public let table: String
     public let column: String
-    public let onDelete: GRDB.Database.ForeignKeyAction?
-    public let onUpdate: GRDB.Database.ForeignKeyAction?
+    public let onDelete: ForeignKeyAction?
+    public let onUpdate: ForeignKeyAction?
 
-    public init(_ table: String, column: String, onDelete: GRDB.Database.ForeignKeyAction? = nil,
-                onUpdate: GRDB.Database.ForeignKeyAction? = nil) {
+    public init(_ table: String, column: String, onDelete: ForeignKeyAction? = nil,
+                onUpdate: ForeignKeyAction? = nil) {
         self.table = table
         self.column = column
         self.onDelete = onDelete
@@ -109,7 +109,8 @@ public struct TableSchema: Sendable {
         self.checks = checks
     }
 
-    public func create(in db: GRDB.Database) throws {
+    public func create(in connection: SQLConnection) throws {
+        let db = connection.database
         let identifiers = [name] + columns.map(\.name) + indexes.map(\.name)
             + columns.compactMap(\.references).flatMap { [$0.table, $0.column] }
         for identifier in identifiers {
@@ -137,7 +138,7 @@ public struct TableSchema: Sendable {
                     if let check = column.check { definition.check(sql: check) }
                     if let reference = column.references {
                         definition.references(reference.table, column: reference.column,
-                                              onDelete: reference.onDelete, onUpdate: reference.onUpdate)
+                                              onDelete: reference.onDelete?.grdb, onUpdate: reference.onUpdate?.grdb)
                     }
                 }
                 for check in checks { table.check(sql: check) }
@@ -170,7 +171,7 @@ public enum SchemaError: Error, CustomStringConvertible {
     }
 }
 
-extension GRDB.Database {
+extension SQLConnection {
     /// Creates a model's table and indexes atomically. Call from a versioned migration.
     public func createTable<Record: TableModel>(_ model: Record.Type) throws {
         try model.tableSchema().create(in: self)

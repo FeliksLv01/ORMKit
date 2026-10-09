@@ -1,13 +1,13 @@
-import GRDB
+internal import GRDB
 
 public struct TableAssignment: Sendable {
     let column: String
     let value: DatabaseValue
 }
 
-extension TableColumn where Value: DatabaseValueConvertible {
+extension TableColumn where Value: SQLValueConvertible {
     public func set(to value: Value) -> TableAssignment {
-        TableAssignment(column: name, value: value.databaseValue)
+        TableAssignment(column: name, value: value.sqlValue.databaseValue)
     }
 }
 
@@ -25,12 +25,12 @@ public func before<A, B>(
     _ first: TableColumn<A>, _ second: TableColumn<B>, _ firstValue: A, _ secondValue: B
 ) -> TablePredicate
 where
-    A: DatabaseValueConvertible & Comparable & Sendable,
-    B: DatabaseValueConvertible & Comparable & Sendable
+    A: SQLValueConvertible & Comparable & Sendable,
+    B: SQLValueConvertible & Comparable & Sendable
 {
     TablePredicate(
         expression: SQL(
-            "(\(sql: quoteIdentifier(first.name)), \(sql: quoteIdentifier(second.name))) < (\(firstValue), \(secondValue))"
+            "(\(sql: quoteIdentifier(first.name)), \(sql: quoteIdentifier(second.name))) < (\(firstValue.sqlValue.databaseValue), \(secondValue.sqlValue.databaseValue))"
         ).sqlExpression)
 }
 
@@ -88,12 +88,12 @@ public struct TransactionTable<Record: TableModel> {
         return result
     }
 
-    private var request: QueryInterfaceRequest<Record> {
+    private var request: QueryInterfaceRequest<RecordAdapter<Record>> {
         TableQuery<Record>.request(predicate: predicate, ordering: ordering, limitCount: limitCount)
     }
 
-    public func fetchAll() throws -> [Record] { try request.fetchAll(database) }
-    public func fetchOne() throws -> Record? { try request.fetchOne(database) }
+    public func fetchAll() throws -> [Record] { try request.fetchAll(database).map(\.model) }
+    public func fetchOne() throws -> Record? { try request.fetchOne(database)?.model }
     public func count() throws -> Int { try request.fetchCount(database) }
     public func exists() throws -> Bool { limitCount == 0 ? false : try limit(1).count() > 0 }
 

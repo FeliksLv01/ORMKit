@@ -47,7 +47,7 @@ struct Note: Sendable {
 }
 ```
 
-Non-optional fields generate `NOT NULL`; optional fields allow `NULL`. Integer types and `Bool` map to INTEGER, `Float`/`Double` to REAL, `String`/`Date` to TEXT, and `Data`/`UUID` to BLOB. Raw-representable enums use their raw value's storage. These defaults match GRDB's default record encoding. Set `@Column(storage: .text)` (or another storage type) for custom codecs or overridden encoding strategies. Unsupported types fail with `SchemaError` rather than guessing. Swift property initializers are not SQLite defaults: declare database defaults with `@Column(defaultValue:)`.
+Non-optional fields generate `NOT NULL`; optional fields allow `NULL`. Integer types and `Bool` map to INTEGER, `Float`/`Double` to REAL, `String`/`Date` to TEXT, and `Data`/`UUID` to BLOB. Raw-representable enums use their raw value's storage. These defaults match the internal record adapter encoding. Set `@Column(storage: .text)` (or another storage type) for custom codecs or overridden encoding strategies. Unsupported types fail with `SchemaError` rather than guessing. Swift property initializers are not SQLite defaults: declare database defaults with `@Column(defaultValue:)`.
 
 `schemaChecks: [String]` adds cross-column checks. Checks, partial-index conditions, and `.sql` defaults are trusted SQL authored by the developer, never user input. Register referenced tables before their dependents. Only one non-optional primary key is supported; AUTOINCREMENT requires `Int` or `Int64`. Table, column, and index names must be nonempty and contain no double quote or NUL.
 
@@ -57,28 +57,13 @@ Existing databases still need explicit versioned migrations. Do not change the m
 
 ## Swift Package Manager
 
-Add this repository as a package dependency, then depend on the `ORMKit` product. The package uses Swift 6.1 or newer and supports iOS 15+, macOS 12+, tvOS 15+, and watchOS 8+.
+Add this repository as a package dependency, then depend on the `ORMKit` product. The package manifest uses Swift tools 6.1; CI validates Xcode 27 / Swift 6.4. It supports iOS 15+, macOS 12+, tvOS 15+, and watchOS 9+.
 
-## CocoaPods
-
-The podspec needs a prebuilt macOS host macro executable. A release maintainer should run `sh build-macro.sh` using the Swift toolchain used for the pod release and include `Prebuilt/ORMKitMacros` in the release. The prebuilt compiler plugin may need rebuilding for a newer Swift toolchain or another macOS host architecture.
-
-The compiler plugin includes SwiftSyntax; its license is included in [ThirdPartyNotices](ThirdPartyNotices/swift-syntax-LICENSE.txt).
-
-GRDB 7 is not currently available in the CocoaPods public specs index, so declare its Git source explicitly in the Podfile:
-
-```ruby
-target 'YourApp' do
-  pod 'GRDB.swift', :git => 'https://github.com/groue/GRDB.swift.git', :tag => 'v7.11.1'
-  pod 'ORMKit', :git => 'https://github.com/FeliksLv01/ORMKit.git', :tag => '0.0.3'
-end
-```
-
-The [local CocoaPods example](Examples/CocoaPods/Podfile) uses `:path => '../..'` to validate installation without a published repository. With current Xcode versions, it also raises the GRDB target's deployment setting to iOS 15 because GRDB's own podspec declares iOS 13.
+Macros build from source. GRDB 7.11.1 is a checksum-pinned XCFramework downloaded from an immutable artifact Release in this repository. Applications add only the `ORMKit` product; ordinary model and CRUD code imports only `ORMKit`.
 
 ## Design notes
 
-### Simplified API (unreleased)
+### Simplified API
 
 The APIs below are included in `0.0.3`. The earlier `0.0.2` tag was withdrawn.
 
@@ -108,7 +93,7 @@ Update closures receive a write-only typed patch, **not a fetched record**:
 - Empty patches are rejected. Mutations on a limited query are rejected rather than silently
   dropping the limit.
 - Partial insert uses the same assignment syntax, preserving defaults for omitted fields.
-- Patch fields must conform to `DatabaseValueConvertible`; raw-value enums can adopt that protocol.
+- Patch fields must conform to `SQLValueConvertible`; raw-value enums can adopt that protocol.
 - Updates return the number of affected rows. An unmatched filter returns zero, not an error.
 
 `limit(50)` emits SQL `LIMIT 50`: it never fetches the entire table and filters in memory.
@@ -154,5 +139,25 @@ try await database.transaction { tx in
 
 - SQLite access and observations are asynchronous. The library has no UIKit, SwiftUI, or `@MainActor` dependency.
 - Query columns are compile-time typed; table creation uses generated schema metadata, and upgrades remain explicit versioned migrations.
-- `Database.read` and `Database.write` expose GRDB's database handle for complex queries and transactional operations.
+- `Database.read` and `Database.write` expose ORMKit's scoped `SQLConnection` for complex queries and transactional operations.
 - Existing migration identifiers and contents should stay stable after release.
+
+
+## Tests and releases
+
+This is a standard SwiftPM package: `Package.swift`, `Sources/` and `Tests/`. SwiftPM is the only supported integration, and macros compile from source. Historical versions remain unchanged.
+
+```sh
+bash Scripts/test-macros.sh
+bash Scripts/test-ios.sh
+```
+
+GitHub Actions runs host macro tests and iOS package tests on pull requests, main updates and version tags. Runtime tests include real macro expansion and automatic registration/database assertions. `xcodebuild` uses pipefail and xcbeautify; logs and xcresults are uploaded even on failure. New numeric version tags create a GitHub Release only after all CI jobs pass. Local release orchestration, CocoaPods and precompiled macro distribution have been removed.
+
+## GRDB artifact
+
+`ruby Scripts/build_grdb.rb` builds the pinned upstream XCFramework. The manual **Build GRDB artifact** workflow builds and tests it on macOS and iOS before optional publication. Download and commit the generated `GRDBArtifact.lock.json` after publication. Normal CI and ORMKit versions reuse that checksum-pinned asset. Public APIs expose ORMKit's `SQLConnection`, `SQLValue`, `SQLRow` and `SQLValueConvertible`; application code does not depend on GRDB types.
+
+## Migration from 0.0.3
+
+Import and link only ORMKit. Model conformances no longer inherit GRDB protocols. Custom query/patch values adopt `SQLValueConvertible`; raw-value enums get default conversion implementations. Migration and raw SQL closures receive `SQLConnection`; use `createTable(Model.self)` or bound `execute(sql:arguments:)`. Replace raw `Row` reads with `SQLRow`. watchOS now requires version 9 because the build toolchain no longer accepts watchOS 8 frameworks.

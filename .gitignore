@@ -1,9 +1,10 @@
 .build/
-build/
 DerivedData/
-Pods/
-.spm.pods/
 *.xcworkspace
 *.xcodeproj
 *.xcuserstate
 .DS_Store
+Prebuilt/
+.distribution/
+vendor/bundle/
+.swiftpm/

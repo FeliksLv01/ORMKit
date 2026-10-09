@@ -1,0 +1,58 @@
+{
+  "repository": "FeliksLv01/ORMKit",
+  "version": "7.11.1",
+  "revision": "b83108d10f42680d78f23fe4d4d80fc88dab3212",
+  "source": "https://github.com/groue/GRDB.swift.git",
+  "platforms": [
+    {
+      "name": "iOS",
+      "destination": "generic/platform=iOS",
+      "settings": {
+        "IPHONEOS_DEPLOYMENT_TARGET": "15.0"
+      }
+    },
+    {
+      "name": "iOS-Simulator",
+      "destination": "generic/platform=iOS Simulator",
+      "settings": {
+        "IPHONEOS_DEPLOYMENT_TARGET": "15.0"
+      }
+    },
+    {
+      "name": "macOS",
+      "destination": "generic/platform=macOS",
+      "settings": {
+        "MACOSX_DEPLOYMENT_TARGET": "12.0"
+      }
+    },
+    {
+      "name": "tvOS",
+      "destination": "generic/platform=tvOS",
+      "settings": {
+        "TVOS_DEPLOYMENT_TARGET": "15.0"
+      }
+    },
+    {
+      "name": "tvOS-Simulator",
+      "destination": "generic/platform=tvOS Simulator",
+      "settings": {
+        "TVOS_DEPLOYMENT_TARGET": "15.0"
+      }
+    },
+    {
+      "name": "watchOS",
+      "destination": "generic/platform=watchOS",
+      "settings": {
+        "WATCHOS_DEPLOYMENT_TARGET": "9.0",
+        "ARCHS": "arm64_32 arm64"
+      }
+    },
+    {
+      "name": "watchOS-Simulator",
+      "destination": "generic/platform=watchOS Simulator",
+      "settings": {
+        "WATCHOS_DEPLOYMENT_TARGET": "9.0"
+      }
+    }
+  ]
+}

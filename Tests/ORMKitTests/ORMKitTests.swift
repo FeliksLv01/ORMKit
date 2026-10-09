@@ -13,13 +13,7 @@ final class ORMKitTests: XCTestCase {
     func testCRUDAndTypedQuery() async throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".sqlite")
         let database = try ORMKit.Database(at: url, migrations: [
-            Migration("create_messages") { db in
-                try db.create(table: "messages") { table in
-                    table.column("id", .text).primaryKey()
-                    table.column("chat_id", .text).notNull()
-                    table.column("text", .text).notNull()
-                }
-            },
+            try Migration("create_messages", tables: [Message.self]),
         ])
         let messages = database.table(Message.self)
         let first = Message(id: "1", chatID: "a", text: "first")
@@ -44,13 +38,7 @@ final class ORMKitTests: XCTestCase {
     func testObservationDeliversUpdatedSnapshot() async throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".sqlite")
         let database = try ORMKit.Database(at: url, migrations: [
-            Migration("create_messages") { db in
-                try db.create(table: "messages") { table in
-                    table.column("id", .text).primaryKey()
-                    table.column("chat_id", .text).notNull()
-                    table.column("text", .text).notNull()
-                }
-            },
+            try Migration("create_messages", tables: [Message.self]),
         ])
         let messages = database.table(Message.self)
         var iterator = messages.where { $0.chatID == "a" }.observe().makeAsyncIterator()
