@@ -11,6 +11,7 @@ struct RecordAdapter<Model: TableModel>: Codable, FetchableRecord, PersistableRe
 
 extension TableModel {
     public func insert(_ connection: SQLConnection) throws { try RecordAdapter(model: self).insert(connection.database) }
+    public func save(_ connection: SQLConnection) throws { try RecordAdapter(model: self).save(connection.database) }
     public func update(_ connection: SQLConnection) throws { try RecordAdapter(model: self).update(connection.database) }
     @discardableResult public func delete(_ connection: SQLConnection) throws -> Bool { try RecordAdapter(model: self).delete(connection.database) }
     public static func fetchOne(_ connection: SQLConnection) throws -> Self? {

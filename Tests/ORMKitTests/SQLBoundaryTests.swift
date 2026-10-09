@@ -27,6 +27,21 @@ final class SQLBoundaryTests: XCTestCase {
         XCTAssertNil(rows.first?.note)
     }
 
+    func testSaveInsertsAndUpdatesExistingPrimaryKey() throws {
+        let queue = try DatabaseQueue()
+        try queue.write { connection in
+            try BoundaryRecord.tableSchema().create(in: connection)
+            let initial = BoundaryRecord(id: 1, state: .ready, note: "initial")
+            try initial.save(connection)
+            let updated = BoundaryRecord(id: 1, state: .complete, note: nil)
+            try updated.save(connection)
+            XCTAssertEqual(try BoundaryRecord.fetchCount(connection), 1)
+            let fetched = try BoundaryRecord.fetchOne(connection, key: Int64(1))
+            XCTAssertEqual(fetched?.state, .complete)
+            XCTAssertNil(fetched?.note)
+        }
+    }
+
     func testBoundSQLAndOwnedRows() throws {
         let queue = try DatabaseQueue()
         let payload = Data([0, 1, 255])
