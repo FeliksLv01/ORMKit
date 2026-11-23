@@ -11,11 +11,11 @@ private struct Item: Sendable {
 }
 
 final class SimpleAPITests: XCTestCase {
-    private func fixture() throws -> ORMKit.Database {
+    private func fixture() throws -> Database {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         addTeardownBlock { try FileManager.default.removeItem(at: root) }
-        return try ORMKit.Database(
+        return try Database(
             at: root.appendingPathComponent("db.sqlite"),
             migrations: [
                 Migration("items") { db in

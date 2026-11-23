@@ -16,7 +16,7 @@ public func IntegrationProbeCheck() async throws -> Bool {
     defer { try? FileManager.default.removeItem(at: directory) }
     let schema = try IntegrationProbe.tableSchema()
     guard schema.name == "integration", schema.columns.map(\.name) == ["id", "display_name", "note", "rank"] else { return false }
-    let database = try ORMKit.Database(at: directory.appendingPathComponent("probe.sqlite"), migrations: [
+    let database = try Database(at: directory.appendingPathComponent("probe.sqlite"), migrations: [
         try Migration("create_probe", tables: [IntegrationProbe.self]),
     ])
     let table = database.table(IntegrationProbe.self)

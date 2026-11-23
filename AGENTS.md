@@ -3,7 +3,7 @@
 - Reply in Chinese; use English Conventional Commits and verify personal Git identity. New Swift files have no header comments.
 - Use standard SwiftPM Sources/Tests structure. SwiftPM is the only distribution; no CocoaPods or precompiled binaries. All scripts belong in Scripts/.
 - Keep ORMKit UI-independent. Applications link and import only ORMKit. Public APIs and model conformances must not expose GRDB types; use `internal import GRDB` and internal record adapters.
-- File-backed databases use WAL mode by default (`DatabaseConfiguration.journalMode = .wal`); in-memory databases share the same `ORMKit.Database` API via `Database.inMemory(...)`.
+- File-backed databases use WAL mode by default (`DatabaseConfiguration.journalMode = .wal`); in-memory databases share the same `Database` API via `Database.inMemory(...)`.
 - Preserve explicit versioned migrations, bound SQL parameters, typed queries, observations, and omitted-versus-NULL patches. Do not change historical migrations or implicitly alter tables.
 - Use the canonical `https://github.com/swiftlang/swift-syntax.git` and `https://github.com/groue/GRDB.swift.git` URLs in `Package.swift`.
 

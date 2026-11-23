@@ -33,7 +33,7 @@ struct Message: Sendable {
     var tag: String?
 }
 
-let database = try ORMKit.Database(
+let database = try Database(
     at: databaseURL,
     migrations: [
         try Migration("v1_create_messages", tables: [Message.self])

@@ -13,7 +13,7 @@ private struct BoundaryRecord: Sendable {
 
 final class SQLBoundaryTests: XCTestCase {
     func testEnumsAndNullPatchesThroughPublicAPI() async throws {
-        let database = try ORMKit.Database.inMemory(migrations: [
+        let database = try Database.inMemory(migrations: [
             try Migration("create", tables: [BoundaryRecord.self]),
         ])
         let table = database.table(BoundaryRecord.self)
@@ -25,7 +25,7 @@ final class SQLBoundaryTests: XCTestCase {
     }
 
     func testSaveInsertsAndUpdatesExistingPrimaryKey() async throws {
-        let database = try ORMKit.Database.inMemory()
+        let database = try Database.inMemory()
         try await database.write { connection in
             try BoundaryRecord.tableSchema().create(in: connection)
             let initial = BoundaryRecord(id: 1, state: .ready, note: "initial")
@@ -40,7 +40,7 @@ final class SQLBoundaryTests: XCTestCase {
     }
 
     func testBoundSQLAndOwnedRows() async throws {
-        let database = try ORMKit.Database.inMemory()
+        let database = try Database.inMemory()
         let payload = Data([0, 1, 255])
         let malicious = "'); DROP TABLE values_table; --"
         let rows = try await database.write { connection in

@@ -9,7 +9,7 @@ public enum JournalMode: Sendable, Equatable {
     case delete
 }
 
-/// Configuration for opening an `ORMKit.Database`.
+/// Configuration for opening a `Database`.
 public struct DatabaseConfiguration: Sendable {
     public var journalMode: JournalMode
     public var foreignKeysEnabled: Bool

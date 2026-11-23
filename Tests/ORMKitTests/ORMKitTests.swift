@@ -17,7 +17,7 @@ final class ORMKitTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let database = try ORMKit.Database(
+        let database = try Database(
             at: dir.appendingPathComponent("wal.sqlite"),
             migrations: [try Migration("create_messages", tables: [Message.self])]
         )
@@ -28,7 +28,7 @@ final class ORMKitTests: XCTestCase {
     }
 
     func testCRUDFindUpsertBatchAndPredicates() async throws {
-        let database = try ORMKit.Database.inMemory(migrations: [
+        let database = try Database.inMemory(migrations: [
             try Migration("create_messages", tables: [Message.self]),
         ])
         let messages = database.table(Message.self)
@@ -89,7 +89,7 @@ final class ORMKitTests: XCTestCase {
     }
 
     func testObservationDeliversUpdatedSnapshot() async throws {
-        let database = try ORMKit.Database.inMemory(migrations: [
+        let database = try Database.inMemory(migrations: [
             try Migration("create_messages", tables: [Message.self]),
         ])
         let messages = database.table(Message.self)

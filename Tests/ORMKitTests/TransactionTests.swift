@@ -11,8 +11,8 @@ private struct Entry: Sendable, Equatable {
 }
 
 final class TransactionTests: XCTestCase {
-    private func fixture() throws -> ORMKit.Database {
-        try ORMKit.Database.inMemory(migrations: [
+    private func fixture() throws -> Database {
+        try Database.inMemory(migrations: [
             Migration("entries") { db in
                 try db.execute(
                     sql:

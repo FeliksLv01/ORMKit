@@ -57,7 +57,7 @@ private struct NamedRecord: Sendable {
 
 final class SchemaTests: XCTestCase {
     func testRawNamesKeywordsAndStoredObservers() async throws {
-        let db = try ORMKit.Database.inMemory()
+        let db = try Database.inMemory()
         try await db.write { conn in
             try conn.createTable(NamedRecord.self)
             try NamedRecord(id: 1, default: "kept").insert(conn)
@@ -67,7 +67,7 @@ final class SchemaTests: XCTestCase {
     }
 
     func testGeneratedSchemaDefaultsConstraintsAndCascade() async throws {
-        let db = try ORMKit.Database.inMemory()
+        let db = try Database.inMemory()
         try await db.write { conn in
             try conn.createTable(SchemaParent.self)
             try conn.createTable(SchemaChild.self)
@@ -99,15 +99,15 @@ final class SchemaTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: directory) }
         let url = directory.appendingPathComponent("db.sqlite")
         let migration = try Migration("v1", tables: [SchemaParent.self, SchemaChild.self])
-        let first = try ORMKit.Database(at: url, migrations: [migration])
+        let first = try Database(at: url, migrations: [migration])
         try await first.table(SchemaParent.self).insert(SchemaParent(id: "kept"))
-        let reopened = try ORMKit.Database(at: url, migrations: [migration])
+        let reopened = try Database(at: url, migrations: [migration])
         let rows = try await reopened.table(SchemaParent.self).fetch()
         XCTAssertEqual(rows.map(\.id), ["kept"])
     }
 
     func testInvalidSchemaAndProjectionsFailBeforeCreatingTable() async throws {
-        let db = try ORMKit.Database.inMemory()
+        let db = try Database.inMemory()
         try await db.write { conn in
             XCTAssertThrowsError(try conn.createTable(InvalidAutoIncrement.self))
             XCTAssertThrowsError(try conn.createTable(SchemaProjection.self))
@@ -122,7 +122,7 @@ final class SchemaTests: XCTestCase {
     }
 
     func testFailedIndexCreationRollsBackTable() async throws {
-        let db = try ORMKit.Database.inMemory()
+        let db = try Database.inMemory()
         try await db.write { conn in
             try conn.createTable(SchemaParent.self)
             try conn.create(index: "one_active_child", on: "parents", columns: ["id"])
@@ -133,7 +133,7 @@ final class SchemaTests: XCTestCase {
     }
 
     func testUnsupportedIdentifiersFailBeforeSQLExecution() async throws {
-        let db = try ORMKit.Database.inMemory()
+        let db = try Database.inMemory()
         try await db.write { conn in
             XCTAssertThrowsError(try conn.createTable(QuotedRecord.self)) { error in
                 guard case SchemaError.invalidIdentifier = error else { return XCTFail("\(error)") }
@@ -142,7 +142,7 @@ final class SchemaTests: XCTestCase {
     }
 
     func testFoundationTypesRoundTrip() async throws {
-        let db = try ORMKit.Database.inMemory()
+        let db = try Database.inMemory()
         try await db.write { conn in
             try conn.createTable(FoundationRecord.self)
             let record = FoundationRecord(id: UUID(), date: Date(timeIntervalSince1970: 100), data: Data([0, 1]), flag: true, real: 1.5)
