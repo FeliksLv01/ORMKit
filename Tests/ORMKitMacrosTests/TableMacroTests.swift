@@ -1,3 +1,4 @@
+#if canImport(ORMKitMacros)
 import ORMKitMacros
 import SwiftParser
 import SwiftSyntax
@@ -66,3 +67,4 @@ final class TableMacroTests: XCTestCase {
         }
     }
 }
+#endif
