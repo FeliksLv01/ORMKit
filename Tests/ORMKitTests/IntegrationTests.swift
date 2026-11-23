@@ -17,7 +17,7 @@ public func IntegrationProbeCheck() async throws -> Bool {
     let schema = try IntegrationProbe.tableSchema()
     guard schema.name == "integration", schema.columns.map(\.name) == ["id", "display_name", "note", "rank"] else { return false }
     let database = try Database(at: directory.appendingPathComponent("probe.sqlite"), migrations: [
-        try Migration("create_probe", tables: [IntegrationProbe.self]),
+        Migration("create_probe", tables: [IntegrationProbe.self]),
     ])
     let table = database.table(IntegrationProbe.self)
     try await table.insert {

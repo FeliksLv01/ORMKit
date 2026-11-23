@@ -179,13 +179,16 @@ extension SQLConnection {
 }
 
 extension Migration {
-    /// Captures schema definitions now; each table is created once when this migration runs.
-    public init(_ identifier: String, tables: [any TableModel.Type]) throws {
-        let schemas = try tables.map { try $0.tableSchema() }
-        guard Set(schemas.map(\.name)).count == schemas.count else {
-            throw SchemaError.invalidTable("Duplicate table registration")
+    /// Registers model tables to be created once when this migration runs.
+    public init(_ identifier: String, tables: [any TableModel.Type]) {
+        let builders: [@Sendable () throws -> TableSchema] = tables.map { model in
+            { try model.tableSchema() }
         }
         self.init(identifier) { db in
+            let schemas = try builders.map { try $0() }
+            guard Set(schemas.map(\.name)).count == schemas.count else {
+                throw SchemaError.invalidTable("Duplicate table registration")
+            }
             for schema in schemas { try schema.create(in: db) }
         }
     }

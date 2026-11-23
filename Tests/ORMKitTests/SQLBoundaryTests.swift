@@ -14,7 +14,7 @@ private struct BoundaryRecord: Sendable {
 final class SQLBoundaryTests: XCTestCase {
     func testEnumsAndNullPatchesThroughPublicAPI() async throws {
         let database = try Database.inMemory(migrations: [
-            try Migration("create", tables: [BoundaryRecord.self]),
+            Migration("create", tables: [BoundaryRecord.self]),
         ])
         let table = database.table(BoundaryRecord.self)
         try await table.insert { $0.id = 1; $0.state = .ready; $0.note = "keep" }

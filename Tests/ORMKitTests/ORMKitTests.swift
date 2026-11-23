@@ -19,7 +19,7 @@ final class ORMKitTests: XCTestCase {
 
         let database = try Database(
             at: dir.appendingPathComponent("wal.sqlite"),
-            migrations: [try Migration("create_messages", tables: [Message.self])]
+            migrations: [Migration("create_messages", tables: [Message.self])]
         )
         let mode = try await database.read { conn in
             try String.fetchOne(conn, sql: "PRAGMA journal_mode")
@@ -29,7 +29,7 @@ final class ORMKitTests: XCTestCase {
 
     func testCRUDFindUpsertBatchAndPredicates() async throws {
         let database = try Database.inMemory(migrations: [
-            try Migration("create_messages", tables: [Message.self]),
+            Migration("create_messages", tables: [Message.self]),
         ])
         let messages = database.table(Message.self)
 
@@ -90,7 +90,7 @@ final class ORMKitTests: XCTestCase {
 
     func testObservationDeliversUpdatedSnapshot() async throws {
         let database = try Database.inMemory(migrations: [
-            try Migration("create_messages", tables: [Message.self]),
+            Migration("create_messages", tables: [Message.self]),
         ])
         let messages = database.table(Message.self)
         var iterator = messages.filter { $0.chatID == "a" }.observe().makeAsyncIterator()

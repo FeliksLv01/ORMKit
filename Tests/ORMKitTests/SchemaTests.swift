@@ -98,7 +98,7 @@ final class SchemaTests: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let url = directory.appendingPathComponent("db.sqlite")
-        let migration = try Migration("v1", tables: [SchemaParent.self, SchemaChild.self])
+        let migration = Migration("v1", tables: [SchemaParent.self, SchemaChild.self])
         let first = try Database(at: url, migrations: [migration])
         try await first.table(SchemaParent.self).insert(SchemaParent(id: "kept"))
         let reopened = try Database(at: url, migrations: [migration])
@@ -114,7 +114,7 @@ final class SchemaTests: XCTestCase {
             XCTAssertFalse(try conn.tableExists("invalid"))
             XCTAssertFalse(try conn.tableExists("children"))
         }
-        XCTAssertThrowsError(try Migration("duplicate", tables: [SchemaParent.self, SchemaParent.self]))
+        XCTAssertThrowsError(try Database.inMemory(migrations: [Migration("duplicate", tables: [SchemaParent.self, SchemaParent.self])]))
         XCTAssertThrowsError(try SchemaColumn("id", type: Int?.self, primaryKey: true))
         XCTAssertThrowsError(try SchemaColumn("id", type: Bool.self, primaryKey: true, autoIncrement: true))
         XCTAssertThrowsError(try SchemaColumn("unknown", type: [String].self))

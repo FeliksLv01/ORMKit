@@ -36,7 +36,7 @@ struct Message: Sendable {
 let database = try Database(
     at: databaseURL,
     migrations: [
-        try Migration("v1_create_messages", tables: [Message.self])
+        Migration("v1_create_messages", tables: [Message.self])
     ]
 )
 
